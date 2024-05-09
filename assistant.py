@@ -1,21 +1,22 @@
 import sys
-
+import pyautogui
 import pyttsx3
 import speech_recognition as sr
 import datetime
 import os
 import subprocess
-import cv2
+import requests
 import random
 from requests import get
 import wikipedia
 import webbrowser
 import pywhatkit as kit
 import smtplib
+import pyjokes
 
 engine = pyttsx3.init('sapi5')
 voices = engine.getProperty('voices')
-engine.setProperty('voice', voices[0].id)
+engine.setProperty('voice', voices[1].id)
 
 
 # text to speech
@@ -29,14 +30,16 @@ def speak(audio):
 def take_command():
     r = sr.Recognizer()
     r.pause_threshold = 1
-    with sr.Microphone() as source:
-        print("Listening ...")
-        audio = r.listen(source, timeout=1, phrase_time_limit=5)
+    
     try:
-        print("Recognizing ...")
+        with sr.Microphone() as source:
+            print("Listening ...")
+            r.adjust_for_ambient_noise(source,duration=0.2)
+            audio = r.listen(source, timeout=5, phrase_time_limit=5)
+            print("Recognizing ...")
 
-        query = r.recognize_google(audio,language='en-in')
-        print(f"User said: {query}")
+            query = r.recognize_google(audio,language='en-in')
+            print(f"User said: {query}")
 
     except Exception as e:
         speak("say that again please...")
@@ -76,12 +79,23 @@ def dynamic_file_get():
     # else:
     #     print("Query does not contain a valid filename.")
 
+def news():
+    url = "https://newsapi.org/v2/top-headlines?country=in&apiKey=994060ecf9d2440a89e7e72fbb543c52"
+    response = requests.get(url).json()
+    articles = response["articles"]
+    head = []
+    days = ["first","second","third"]
+    for ar in articles:
+        head.append(ar["title"])
+    for i in range(len(days)):
+        speak(f"todays {days[i]} news is: {head[i]}")    
+
 
 def send_email(to,content):
     server = smtplib.SMTP('smtp.gmail.com',587)
     server.ehlo()
     server.starttls()
-    server.login('dawoodahmed6497@gmail.com','198924aA.')
+    server.login('dawoodahmed6497@gmail.com','198924Aa.')
     server.sendmail('dawoodahmed6497@gmail.com',to,content)
     server.close()
 
@@ -92,30 +106,38 @@ if __name__ == '__main__':
     wish()
     while True:
         query = take_command().lower()
-        if "open notepad" in query:
-            b = getpath("notepad")
-            n = b.partition('\n')[0]
-            os.startfile(n)
-        elif "open command line" in query:
-            os.system("start cmd")
-        elif "open camera" in query:
-            cap = cv2.VideoCapture(0)
-            while True:
-                ret,img = cap.read()
-                cv2.imshow('webcam',img)
-                k = cv2.waitKey(50)
-                if k == 27:
-                    break
-            cap.release()
-            cv2.destroyAllWindows()
+
+        if "youtube" in query:
+            speak("sir what should i search on youtube")
+            cd = take_command().lower()
+            kit.playonyt(f"{cd}")  
+
+        elif "google" in query:
+            speak("sir what should i search on google")
+            cd = take_command().lower()
+            webbrowser.open(f"{cd}")    
+            
+        elif "open" in query:
+            query = query.replace("open","").strip()
+            query = query.replace("for","").strip()
+            query = query.replace("me","").strip()
+            query = query.replace("please","").strip()
+            pyautogui.press("super")
+            pyautogui.sleep(2)
+            pyautogui.typewrite(query)
+            pyautogui.sleep(1)
+            pyautogui.press("enter")
+
         elif "play music" in query:
             music_dir = "D:\\music"
             songs = os.listdir(music_dir)
             rd = random.choice(songs)
-            os.startfile(os.path.join(music_dir,rd))
+            os.startfile(os.path.join(music_dir,rd))  
+
         elif "ip address" in query:
             ip = get('https://api.ipify.org').text
-            speak(f"sir your ip address is {ip}")
+            speak(f"sir your ip address is {ip}")   
+
         elif "wikipedia" in query:
             speak("searching wikipedia.....")
             query = query.replace("wikipedia","")
@@ -123,13 +145,19 @@ if __name__ == '__main__':
             results = wikipedia.summary(query,sentences = 3)
             speak("according to wikipedia")
             speak(results)
-            print(results)
-        elif "open youtube" in query:
-            webbrowser.open("youtube.com")
-        elif "open google" in query:
-            speak("sir what should i search on google")
-            cd = take_command().lower()
-            webbrowser.open(f"{cd}")
+            print(results)      
+
+        elif "send email to david" in query:
+            try:
+                speak("what should i say")
+                content = take_command().lower()
+                to = "dawoodahmed6497@gmail.com"
+                send_email(to,content)
+                speak("email has been sent")
+            except Exception as e:
+                print(e)
+                speak("sorry sir, i am not able to send the email")   
+
         elif "send message" in query:
             now = datetime.datetime.now()
             current_time = now.strftime("%H:%M")
@@ -141,20 +169,55 @@ if __name__ == '__main__':
 
             # Send the message
             kit.sendwhatmsg("+923075984681", "this is texting protocol", 5, 29)
-        elif "play songs on youtube" in query:
-            kit.playonyt("treat you better")
-        elif "send email to david" in query:
-            try:
-                speak("what should i say")
-                content = take_command().lower()
-                to = "dawoodahmed6497@gmail.com"
-                send_email(to,content)
-                speak("email has been sent")
-            except Exception as e:
-                print(e)
-                speak("sorry sir, i am not able to send the email")
+
+        elif "shut down the system" in query:
+            os.system("shutdown /s /t S")
+
+        elif "restart the system" in query:
+            os.system("shutdown /r /t S")
+
+        elif "sleep the system" in query:
+            os.system("rundll32.exe powrprof.dll,SetSuspendState 0,1,0")            
+
+        elif "tell me the news"in query:
+            speak("searching the latest news...")
+            news() 
+
+        elif "tell me a joke" in query:
+            joke = pyjokes.get_joke()
+            speak(joke)
+
+        elif "switch the window" in query:
+            pyautogui.keyDown("alt")
+            pyautogui.press("tab")
+            pyautogui.sleep(1)
+            pyautogui.keyUp("alt")    
+
         elif "no thanks" in query:
             speak("have a nice day sir")
             sys.exit()
         speak("do you need me to do anything else for you")
 
+
+            # b = getpath("notepad")
+            # n = b.partition('\n')[0]
+            # os.startfile(n)
+        # elif "open camera" in query:
+        #     cap = cv2.VideoCapture(0)
+        #     while True:
+        #         ret,img = cap.read()
+        #         cv2.imshow('webcam',img)
+        #         k = cv2.waitKey(50)
+        #         if k == 27:
+        #             break
+        #     cap.release()
+        #     cv2.destroyAllWindows()
+        
+        
+        
+        # elif "open youtube" in query:
+        #     webbrowser.open("youtube.com")
+        
+        
+        
+        
