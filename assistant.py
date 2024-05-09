@@ -1,3 +1,5 @@
+import sys
+
 import pyttsx3
 import speech_recognition as sr
 import datetime
@@ -153,5 +155,6 @@ if __name__ == '__main__':
                 speak("sorry sir, i am not able to send the email")
         elif "no thanks" in query:
             speak("have a nice day sir")
+            sys.exit()
         speak("do you need me to do anything else for you")
 
