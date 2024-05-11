@@ -13,6 +13,8 @@ import webbrowser
 import pywhatkit as kit
 import smtplib
 import pyjokes
+import instaloader
+import time
 
 engine = pyttsx3.init('sapi5')
 voices = engine.getProperty('voices')
@@ -31,20 +33,23 @@ def take_command():
     r = sr.Recognizer()
     r.pause_threshold = 1
     
-    try:
-        with sr.Microphone() as source:
-            print("Listening ...")
-            r.adjust_for_ambient_noise(source,duration=0.2)
-            audio = r.listen(source, timeout=5, phrase_time_limit=5)
-            print("Recognizing ...")
+    while True:
+        try:
+            with sr.Microphone() as source:
+                print("Listening ...")
+                r.adjust_for_ambient_noise(source,duration=0.2)
+                audio = r.listen(source, timeout=5, phrase_time_limit=5)
+                print("Recognizing ...")
 
-            query = r.recognize_google(audio,language='en-in')
-            print(f"User said: {query}")
+                query = r.recognize_google(audio,language='en-in')
+                print(f"User said: {query}")
+                return query
 
-    except Exception as e:
-        speak("say that again please...")
-        return "none"
-    return query
+        except Exception as e:
+            speak("say that again please...")
+        
+        
+    
 
 
 def wish():
@@ -92,12 +97,15 @@ def news():
 
 
 def send_email(to,content):
+    email = "dawoodahmed6497@gmail.com"
+    password = "198924Aa."
+
     server = smtplib.SMTP('smtp.gmail.com',587)
-    server.ehlo()
     server.starttls()
-    server.login('dawoodahmed6497@gmail.com','198924Aa.')
-    server.sendmail('dawoodahmed6497@gmail.com',to,content)
-    server.close()
+    server.login(email,password)
+    server.sendmail(email,to,content)
+    server.quit()
+    speak("email has been sent")
 
 
 if __name__ == '__main__':
@@ -153,7 +161,6 @@ if __name__ == '__main__':
                 content = take_command().lower()
                 to = "dawoodahmed6497@gmail.com"
                 send_email(to,content)
-                speak("email has been sent")
             except Exception as e:
                 print(e)
                 speak("sorry sir, i am not able to send the email")   
@@ -193,9 +200,54 @@ if __name__ == '__main__':
             pyautogui.sleep(1)
             pyautogui.keyUp("alt")    
 
+        elif "current location" in query or "where i am" in query or "where we are" in query:
+            speak("wait sir,let me check")
+            try:
+                ip_address = get('https://api.ipify.org').text
+                url = (f'https://ipapi.co/{ip_address}/json/')
+                response = requests.get(url).json()
+                location = {
+                    "city":response.get("city"),
+                    "region":response.get("region"),
+                    "country":response.get("country")
+                }
+                speak(f"It shows that we are in city : {location['city']}, region : {location['region']} in the country : {location['country']}")
+            except:
+                speak("sorry sir, due to network issue i am not able to find where we are") 
+                pass   
+
+        elif "instagram profile" in query or "profile on instagram" in query:
+            speak("sir please enter the username correctly")
+            name= input("enter username here")
+            webbrowser.open(f"www.instagram.com/{name}")
+            speak(f"sir here ids the instagram  profile of the user {name}")
+            time.sleep(5)
+            speak("sir would you like me to download profile pictue of this account")
+            command = take_command().lower()
+            if "yes" in command:
+                mod = instaloader.instaloader()
+                mod.download_profile(name,profile_pic_only = True)
+                speak("The image is successfully installed in our main folder.")
+            else:
+                pass    
+
+        elif "screenshot" in query:
+            speak("sir do you want me to take a screenshot of the current window")
+            comment = take_command().lower()
+            if "yes" in comment:
+                speak("Sir please tell me the name for the screenshot to save")
+                filename = take_command().lower()
+                img = pyautogui.screenshot()
+                img.save(f"{filename}.png")
+                speak("Sir the screenshot is successfully saved")
+            else:
+                pass    
+
         elif "no thanks" in query:
             speak("have a nice day sir")
             sys.exit()
+        else:
+            speak("i am not able to search this")    
         speak("do you need me to do anything else for you")
 
 
